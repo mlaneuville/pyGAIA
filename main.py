@@ -79,6 +79,11 @@ for i in range(1, s.nOutputs+1):
         lw = 2*speed/speed.max()
         ax.streamplot(X, Y, U, V, color='k', linewidth=lw, arrowstyle='-')
     
+    D = 1410e3
+    kappa = 1e-6
+    Ga = 1e9*365.25*24*3600
+
+    plt.text(0., 1., "Time: %3.2f Ga" % (o.time*D**2/kappa/Ga), transform=ax.transAxes)
     plt.savefig("vis/T-slice-%03d.png" % (i-1), transparent=True)
 
 #fig = plt.figure()
