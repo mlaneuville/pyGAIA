@@ -33,12 +33,16 @@ g = Grid(s.grid)
 #plt.plot(r, t)
 #plt.show()
 
+time_evo = []
+core_evo = []
+
 for i in range(1, s.nOutputs+1):
     o = s.getAtOutput(i)
     f = o.getField('T')
     vel = o.getField('v')
     sol = o.getField('s')
-    
+    evo = o.getField('E')
+
     vx = np.array(vel.data)[0::3]
     vy = np.array(vel.data)[1::3]
 
@@ -82,9 +86,20 @@ for i in range(1, s.nOutputs+1):
     D = 1410e3
     kappa = 1e-6
     Ga = 1e9*365.25*24*3600
+    time = o.time*D**2/kappa/Ga
 
-    plt.text(0., 1., "Time: %3.2f Ga" % (o.time*D**2/kappa/Ga), transform=ax.transAxes)
+    plt.text(0., 1., "Time: %3.2f Ga" % time, transform=ax.transAxes)
     plt.savefig("vis/T-slice-%03d.png" % (i-1), transparent=True)
+
+    time_evo.append(time)
+    core_evo.append(evo.data[0])
+
+    plt.figure()
+    plt.plot(time_evo, core_evo, 'k', lw=2)
+    plt.xlabel("Time [Ga]")
+    plt.ylabel("Core size [-]")
+    plt.grid()
+    plt.savefig("vis/core-evolution.png", transparent=True)
 
 #fig = plt.figure()
 #ax = p3.Axes3D(fig)
