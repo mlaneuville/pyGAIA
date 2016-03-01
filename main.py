@@ -11,6 +11,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import sys
 import numpy as np
 import os
+import yaml
 
 # TODO: this is very dangerous
 np.seterr(all='ignore')
@@ -23,6 +24,20 @@ if len(sys.argv) != 2:
 folder = sys.argv[1]
 
 os.chdir(base_folder)
+
+try:
+    stream = file(folder+"/parameters.yaml")
+except IOError:
+    print "Cannot find parameters file in  "+folder
+    sys.exit()
+
+data = yaml.load(stream)
+
+moon_radius = data["moon_radius"]
+core_radius = data["core_radius"]
+mantle_diffusivity = data["mantle_diffusivity"]
+temperature_scale = data["temperature_scale"]
+temperature_offset = data["temperature_offset"]
 
 s = Simulation(folder)
 g = Grid(s.grid)
@@ -53,7 +68,7 @@ for i in range(1, s.nOutputs+1):
     X, Y, U = g.getSlice(vx, 2)
     X, Y, V = g.getSlice(vy, 2)
     
-    Z = T
+    Z = T*temperature_scale + temperature_offset
     M = T - S
     
     meltzone = T > S
@@ -62,7 +77,7 @@ for i in range(1, s.nOutputs+1):
     
     fig, ax = plt.subplots(figsize=(8,8))
 
-    levels = np.linspace(0, 1.1, 50)
+    levels = np.linspace(250, 2000, 50)
     CS = plt.contourf(X, Y, Z, levels)
     CS2 = plt.contourf(X, Y, M, colors='white')
     
@@ -84,8 +99,8 @@ for i in range(1, s.nOutputs+1):
         lw = 2*speed/speed.max()
         ax.streamplot(X, Y, U, V, color='k', linewidth=lw, arrowstyle='-')
     
-    D = 1410e3
-    kappa = 1e-6
+    D = moon_radius - core_radius
+    kappa = mantle_diffusivity
     Ga = 1e9*365.25*24*3600
     time = o.time*D**2/kappa/Ga
 
@@ -93,20 +108,20 @@ for i in range(1, s.nOutputs+1):
     plt.savefig("vis/T-slice-%03d.png" % (i-1), transparent=True)
 
     time_evo.append(time)
-    core_evo.append(evo.data[0])
-    tcmb_evo.append(f.data[0])
+    core_evo.append(evo.data[0]*core_radius/1e3)
+    tcmb_evo.append(f.data[0]*temperature_scale + temperature_offset)
 
     plt.figure()
     plt.plot(time_evo, core_evo, 'k', lw=2)
     plt.xlabel("Time [Ga]")
-    plt.ylabel("Core size [-]")
+    plt.ylabel("Core size [km]")
     plt.grid()
     plt.savefig("vis/core-size-evolution.png", transparent=True)
 
     plt.figure()
     plt.plot(time_evo, tcmb_evo, 'k', lw=2)
     plt.xlabel("Time [Ga]")
-    plt.ylabel("Core Temperature [-]")
+    plt.ylabel("Core Temperature [K]")
     plt.grid()
     plt.savefig("vis/core-temperature-evolution.png", transparent=True)
 
